@@ -7,9 +7,15 @@ require 'pry'
 def hw1_test(directory)
   @original_directory = Dir.pwd
   Dir.chdir(directory) do
-    check_for_makefile
-    attempt_compile
-    play_game(0)
+    begin
+      check_for_makefile
+      attempt_compile
+      play_game(0)
+    rescue => e
+      `rm #{@binary}` unless @binary.nil?
+      raise e
+    end
+    `rm #{@binary}`
   end
 end
 
@@ -33,11 +39,11 @@ def find_target_word(prompt)
     # This is one of those lines that makes me wonder
     # if I'm a bad programmer
     return word if prompt.end_with?(" #{word}",
-      " #{word}:",
-      " #{word}: ",
-      " #{word}: \n",
-      " #{word}\n",
-      " #{word}:\n")
+      "#{word}:",
+      "#{word}: ",
+      "#{word}: \n",
+      "#{word}\n",
+      "#{word}:\n")
   end
 
   raise "Word not found. Prompt:\n#{prompt}"
