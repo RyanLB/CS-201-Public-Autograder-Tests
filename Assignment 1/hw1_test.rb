@@ -69,8 +69,15 @@ def play_game(delay)
       ++i
     end
 
-    raise "Unable to find all words." if found_words.length != 9
+    raise "Unable to find all words." unless found_words.length == 9
+    prompt = r.readpartial(2048)
+
+    # We should see two numbers
+    match_result = prompt.scan(/[0-9]+/).map{|val| val.to_i }
+
+    raise "Unable to find two time values. Found: #{match_result.inspect}" unless match_result.length == 2
     puts "Success!"
+    match_result
   }
 end
 
