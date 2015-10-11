@@ -53,8 +53,24 @@ def play_game(delay)
   delay ||= 0
   
   PTY.spawn("./#{@binary}"){|r, w, pid|
-    word = find_target_word(r.readpartial(2048))
-    puts "Found: #{word}"
+    # Counter to abort if we get caught in an infinite loop.
+    # That's probably unnecessary since we raise an error
+    # upon seeing duplicate words, but it doesn't hurt.
+    i = 0
+    found_words = []
+    while (found_words.length < 9 && i < 100)
+      prompt = r.readpartial(2048)
+      puts prompt
+      word = find_target_word(prompt)
+      raise "Word \"#{word}\" was given multiple times." if found_words.include?(word)
+      found_words.push(word)
+      sleep(delay)
+      w.puts(word)
+      ++i
+    end
+
+    raise "Unable to find all words." if found_words.length != 9
+    puts "Success!"
   }
 end
 
