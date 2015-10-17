@@ -2,7 +2,6 @@ require 'pty'
 require 'pry'
 
 @words = %w[The quick brown fox jumps over the lazy dog]
-@found_words = []
 
 def hw1_test(directory)
   @original_directory = Dir.pwd
@@ -37,20 +36,23 @@ def attempt_compile
 end
 
 def get_line_with_delay(r)
+  # Because Ruby can type much faster than I can, out input
+  # and output can get out of sync if we don't add a small delay
   sleep(0.03)  
   r.readpartial(2048)
 end
 
+def put_line_with_delay(w, line)
+  sleep(0.03)
+  w.puts(line)
+end
+
 def find_target_word(prompt)
   @words.each do |word|
-    # This is one of those lines that makes me wonder
-    # if I'm a bad programmer
-    return word if prompt.end_with?(" #{word}",
-      "#{word}:",
-      "#{word}: ",
-      "#{word}: \n",
-      "#{word}\n",
-      "#{word}:\n")
+    unless prompt.match(/(#{word})(:?)[ (\r?\n)]?\Z/).nil?
+      #binding.pry
+      return word
+    end
   end
 
   raise "Word not found. Prompt:\n#{prompt}"
@@ -80,7 +82,7 @@ def play_game(delay)
       raise "Word \"#{word}\" was given multiple times." if duplicate_word(found_words, word)
       found_words.push(word)
       sleep(delay)
-      w.puts(word)
+      put_line_with_delay(w, word)
       ++i
     end
 
@@ -96,5 +98,11 @@ def play_game(delay)
     return match_result
   }
 end
+
+def run_on_directory(dir)
+  #hurr
+end
+
+# run_on_directory(ARGV.first)
 
 hw1_test(ARGV.first)
