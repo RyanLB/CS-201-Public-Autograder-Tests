@@ -49,7 +49,10 @@ end
 
 def find_target_word(prompt)
   @words.each do |word|
-    return word unless prompt.match(/(#{word})(:?)[ (\r?\n?)]?$/).nil?
+    unless prompt.match(/(#{word})(:?)[ (\r?\n)]?\Z/).nil?
+      #binding.pry
+      return word
+    end
   end
 
   raise "Word not found. Prompt:\n#{prompt}"
