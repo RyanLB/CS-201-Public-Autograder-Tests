@@ -10,7 +10,9 @@ def hw1_test(directory)
     begin
       check_for_makefile
       attempt_compile
-      play_game(0)
+      first_time = play_game(0)
+      second_time = play_game(1)
+      raise "Time value did not increase with delay!" unless second_time.first > first_time.first
     rescue => e
       `rm #{@binary}` unless @binary.nil?
       raise e
@@ -34,6 +36,11 @@ def attempt_compile
   @binary = (Dir.entries('.') - existing_files).first
 end
 
+def get_line_with_delay(r)
+  sleep(0.03)  
+  r.readpartial(2048)
+end
+
 def find_target_word(prompt)
   @words.each do |word|
     # This is one of those lines that makes me wonder
@@ -49,6 +56,14 @@ def find_target_word(prompt)
   raise "Word not found. Prompt:\n#{prompt}"
 end
 
+def duplicate_word(found_words, word)
+  dup_count = found_words.select{|w| w == word}.length
+  if word == "the"
+    return (found_words.include?("The") && dup_count > 0) || dup_count > 1
+  end
+  dup_count > 0
+end
+
 def play_game(delay)
   delay ||= 0
   
@@ -59,10 +74,10 @@ def play_game(delay)
     i = 0
     found_words = []
     while (found_words.length < 9 && i < 100)
-      prompt = r.readpartial(2048)
+      prompt = get_line_with_delay(r)
       puts prompt
       word = find_target_word(prompt)
-      raise "Word \"#{word}\" was given multiple times." if found_words.include?(word)
+      raise "Word \"#{word}\" was given multiple times." if duplicate_word(found_words, word)
       found_words.push(word)
       sleep(delay)
       w.puts(word)
@@ -70,14 +85,15 @@ def play_game(delay)
     end
 
     raise "Unable to find all words." unless found_words.length == 9
-    prompt = r.readpartial(2048)
+    sleep(1)
+    prompt = get_line_with_delay(r)
 
     # We should see two numbers
     match_result = prompt.scan(/[0-9]+/).map{|val| val.to_i }
 
     raise "Unable to find two time values. Found: #{match_result.inspect}" unless match_result.length == 2
     puts "Success!"
-    match_result
+    return match_result
   }
 end
 
