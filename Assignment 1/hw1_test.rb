@@ -93,7 +93,7 @@ def play_game(delay)
     # We should see two numbers
     match_result = prompt.scan(/[0-9]+/).map{|val| val.to_i }
 
-    raise "Unable to find two time values. Found: #{match_result.inspect}" unless match_result.length == 2
+    raise "Unable to find time values. Found: #{match_result.inspect}" unless match_result.length == 1 || match_result.length == 2
     puts "Success!"
     return match_result
   }
