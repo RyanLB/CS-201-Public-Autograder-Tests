@@ -49,10 +49,7 @@ end
 
 def find_target_word(prompt)
   @words.each do |word|
-    unless prompt.match(/(#{word})(:?)[ (\r?\n)]?\Z/).nil?
-      #binding.pry
-      return word
-    end
+    return word unless prompt.match(/(#{word})(:?)[ (\r?\n)]?\Z/).nil?
   end
 
   raise "Word not found. Prompt:\n#{prompt}"
@@ -100,9 +97,57 @@ def play_game(delay)
 end
 
 def run_on_directory(dir)
-  #hurr
+    # Open output file for results
+    successes = File.open("successes", "w")
+    failures = File.open("failures", "w")
+
+    Dir.chdir(dir) do
+      zips = Dir.entries('.').select{|file|
+        file.end_with?(".zip")
+      }.map{|file|
+        file.gsub(" ", "\\ ")
+      }
+
+      existing_directories = Dir.glob("**/")
+      existing_files = Dir.entries('.')
+      
+      zips.each{|zip|
+        failed = false
+        
+        begin
+          `unzip #{zip}`
+          
+          # Get new directory
+          new_directories = Dir.glob("**/").select{|dir|
+            !existing_directories.include?(dir)
+          }
+          
+          throw "Unable to find new directory" if new_directories.length != 1
+
+          hw1_test(new_directories.first)
+        rescue => e
+          failures.puts("#{zip},#{e.inspect}")
+          failed = true
+        end
+
+        new_directories.each{|dir|
+          `rm -rf #{dir}`
+        } unless new_directories.nil?
+
+        Dir.entries('.').select{|file|
+          !existing_files.include?(file)
+        }.each{|file|
+          `rm -rf #{file}`
+        }
+
+        successes.puts(zip) unless failed
+      }
+    end
+
+    successes.close
+    failures.close
 end
 
-# run_on_directory(ARGV.first)
+#run_on_directory(ARGV.first)
 
 hw1_test(ARGV.first)
