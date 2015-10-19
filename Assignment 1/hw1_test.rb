@@ -1,5 +1,6 @@
 require 'pty'
 require 'pry'
+require 'timeout'
 
 @words = %w[The quick brown fox jumps over the lazy dog]
 
@@ -28,9 +29,21 @@ def check_for_makefile
   raise "Makefile not found" if makefiles.length != 1
 end
 
+def run_with_timeout(command, timeout = 5)
+  pid = Process.spawn(command)
+  begin
+    Timeout.timeout(timeout) do
+      Process.wait(pid)
+    end
+  rescue Timeout::Error => e
+    Process.kill(-15, pid)
+    raise e
+  end
+end
+
 def attempt_compile
   existing_files = Dir.entries('.')
-  make_output = `make`
+  make_output = run_with_timeout('make')
   puts "Compilation output: #{make_output}"
   @binary = (Dir.entries('.') - existing_files).first
 end
@@ -67,32 +80,39 @@ def play_game(delay)
   delay ||= 0
   
   PTY.spawn("./#{@binary}"){|r, w, pid|
-    # Counter to abort if we get caught in an infinite loop.
-    # That's probably unnecessary since we raise an error
-    # upon seeing duplicate words, but it doesn't hurt.
-    i = 0
-    found_words = []
-    while (found_words.length < 9 && i < 100)
-      prompt = get_line_with_delay(r)
-      puts prompt
-      word = find_target_word(prompt)
-      raise "Word \"#{word}\" was given multiple times." if duplicate_word(found_words, word)
-      found_words.push(word)
-      sleep(delay)
-      put_line_with_delay(w, word)
-      ++i
+    begin
+      Timeout.timeout(30) do
+        # Counter to abort if we get caught in an infinite loop.
+        # That's probably unnecessary since we raise an error
+        # upon seeing duplicate words, but it doesn't hurt.
+        i = 0
+        found_words = []
+        while (found_words.length < 9 && i < 100)
+          prompt = get_line_with_delay(r)
+          puts prompt
+          word = find_target_word(prompt)
+          raise "Word \"#{word}\" was given multiple times." if duplicate_word(found_words, word)
+          found_words.push(word)
+          sleep(delay)
+          put_line_with_delay(w, word)
+          ++i
+        end
+
+        raise "Unable to find all words." unless found_words.length == 9
+        sleep(1)
+        prompt = get_line_with_delay(r)
+
+        # We should see two numbers
+        match_result = prompt.scan(/[0-9]+/).map{|val| val.to_i }
+
+        raise "Unable to find time values. Found: #{match_result.inspect}" unless match_result.length == 1 || match_result.length == 2
+        puts "Success!"
+        return match_result
+      end
+    rescue Timeout::Error => e
+      PTY.kill(-15, pid)
+      raise e
     end
-
-    raise "Unable to find all words." unless found_words.length == 9
-    sleep(1)
-    prompt = get_line_with_delay(r)
-
-    # We should see two numbers
-    match_result = prompt.scan(/[0-9]+/).map{|val| val.to_i }
-
-    raise "Unable to find time values. Found: #{match_result.inspect}" unless match_result.length == 1 || match_result.length == 2
-    puts "Success!"
-    return match_result
   }
 end
 
@@ -115,7 +135,7 @@ def run_on_directory(dir)
         failed = false
         
         begin
-          `unzip #{zip}`
+          run_with_timeout("unzip #{zip}", 10)
           
           # Get new directory
           new_directories = Dir.glob("**/").select{|dir|
@@ -131,13 +151,13 @@ def run_on_directory(dir)
         end
 
         new_directories.each{|dir|
-          `rm -rf #{dir}`
+          run_with_timeout("rm -rf #{dir}", 10)
         } unless new_directories.nil?
 
         Dir.entries('.').select{|file|
           !existing_files.include?(file)
         }.each{|file|
-          `rm -rf #{file}`
+          run_with_timeout("rm -rf #{file}")
         }
 
         successes.puts(zip) unless failed
@@ -148,6 +168,6 @@ def run_on_directory(dir)
     failures.close
 end
 
-#run_on_directory(ARGV.first)
+run_on_directory(ARGV.first)
 
-hw1_test(ARGV.first)
+#hw1_test(ARGV.first)
