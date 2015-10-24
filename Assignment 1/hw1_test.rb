@@ -125,7 +125,7 @@ def run_on_directory(dir)
       zips = Dir.entries('.').select{|file|
         file.end_with?(".zip")
       }.map{|file|
-        file.gsub(" ", "\\ ")
+        file.gsub(" ", "\\ ").gsub('(', '\(').gsub(')', '\)')
       }
 
       existing_directories = Dir.glob("**/")
