@@ -1,5 +1,5 @@
 require 'pty'
-require 'pry'
+#require 'pry'
 require 'timeout'
 
 @words = %w[The quick brown fox jumps over the lazy dog]
@@ -141,10 +141,14 @@ def run_on_directory(dir)
           new_directories = Dir.glob("**/").select{|dir|
             !existing_directories.include?(dir)
           }
-          
-          throw "Unable to find new directory" if new_directories.length != 1
 
-          hw1_test(new_directories.first)
+          new_files = Dir.entries('.').select{|file|
+            !existing_files.include?(file)
+          }
+          
+          throw "Unable to find new directory" if new_directories.length != 1 && new_files.length == 0
+
+          hw1_test(new_directories.length == 1 ? new_directories.first : '.')
         rescue => e
           failures.puts("#{zip},#{e.inspect}")
           failed = true
@@ -154,9 +158,7 @@ def run_on_directory(dir)
           run_with_timeout("rm -rf #{dir}", 10)
         } unless new_directories.nil?
 
-        Dir.entries('.').select{|file|
-          !existing_files.include?(file)
-        }.each{|file|
+        new_files.each{|file|
           run_with_timeout("rm -rf #{file}")
         }
 
@@ -168,6 +170,6 @@ def run_on_directory(dir)
     failures.close
 end
 
-run_on_directory(ARGV.first)
+#run_on_directory(ARGV.first)
 
-#hw1_test(ARGV.first)
+hw1_test(ARGV.first)
