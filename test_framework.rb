@@ -25,16 +25,30 @@ def attempt_compile
   makefile = find_makefile
   binary = find_binary_name(makefile)
   existing_files = Dir.entries('.')
+
+  # Remove the binary if it already exists
+  run_with_timeout("rm -f #{binary}") if existing_files.include?(binary)
+
   make_output = run_with_timeout('make')
-  puts "Compilation output: #{make_output}"
-  @binary = (Dir.entries('.') - existing_files).first
+  raise "Unable to find binary" unless Dir.entries('.').include?(binary)
+  binary
 end
 
 def find_binary_name(makefile)
+  compilation_statements = []
   File.open(makefile) do |f|
     f.each_line{|line|
-      compilation_statement = 
+      # Remove leading whitespace
+      stripped = line.lstrip
+      compilation_statements.push(stripped) if stripped.start_with?('gcc')
     }
+  end
+
+  raise "No compilation statement found" if compilation_statements.length == 0
+
+  compilation_statements.each do |l|
+    output_match = l.match(/-o +[^ ]+/)
+    return output_match.to_s.split(' ').last unless output_match.nil?
   end
 
   raise "Unable to find binary name"

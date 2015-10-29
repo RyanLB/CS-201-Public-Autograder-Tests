@@ -7,18 +7,17 @@ require_relative '../test_framework'
 @words = %w[The quick brown fox jumps over the lazy dog]
 
 def hw1_test(directory)
-  @original_directory = Dir.pwd
   Dir.chdir(directory) do
     begin
-      attempt_compile
-      first_time = play_game(0)
-      second_time = play_game(1)
+      binary = attempt_compile
+      first_time = play_game(binary, 0)
+      second_time = play_game(binary, 1)
       raise "Time value did not increase with delay!" unless second_time.first > first_time.first
     rescue => e
-      `rm #{@binary}` unless @binary.nil?
+      `rm #{binary}` unless binary.nil?
       raise e
     end
-    `rm #{@binary}`
+    `rm #{binary}`
   end
 end
 
@@ -38,10 +37,10 @@ def duplicate_word(found_words, word)
   dup_count > 0
 end
 
-def play_game(delay)
+def play_game(binary, delay)
   delay ||= 0
   
-  PTY.spawn("./#{@binary}"){|r, w, pid|
+  PTY.spawn("./#{binary}"){|r, w, pid|
     begin
       Timeout.timeout(30) do
         # Counter to abort if we get caught in an infinite loop.
