@@ -27,7 +27,10 @@ def attempt_compile
   existing_files = Dir.entries('.')
 
   # Remove the binary if it already exists
-  run_with_timeout("rm -f #{binary}") if existing_files.include?(binary)
+  if existing_files.include?(binary)
+    puts "DELETING #{binary}"
+    run_with_timeout("rm -f #{binary}")
+  end
 
   make_output = run_with_timeout('make')
   raise "Unable to find binary" unless Dir.entries('.').include?(binary)
@@ -69,9 +72,9 @@ end
 def decompress(file)
   if file.end_with?('.zip')
     command = "unzip #{escaped_filename(file)}"
-  else if file.end_with?('.rar')
+  elsif file.end_with?('.rar')
     command = "unrar e #{escaped_filename(file)}"
-  else if file.end_with?('.tar.gz')
+  elsif file.end_with?('.tar.gz')
     command = "tar -xzvf #{escaped_filename(file)}"
   else
     raise "Unrecognized filetype: #{file}"
