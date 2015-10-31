@@ -43,7 +43,7 @@ def find_binary_name(makefile)
     f.each_line{|line|
       # Remove leading whitespace
       stripped = line.lstrip
-      compilation_statements.push(stripped) if stripped.start_with?('gcc')
+      compilation_statements.push(stripped) if stripped.start_with?('gcc') || stripped.start_with?('$(CC)')
     }
   end
 
@@ -87,7 +87,7 @@ def escaped_filename(file)
   file.gsub(" ", "\\ ").gsub('(', '\(').gsub(')', '\)')
 end
 
-def run_on_directory(dir)
+def run_on_directory(test, dir)
     # Open output file for results
     successes = File.open("successes", "w")
     failures = File.open("failures", "w")
@@ -100,7 +100,7 @@ def run_on_directory(dir)
       existing_directories = Dir.glob("**/")
       existing_files = Dir.entries('.')
       
-      zips.each{|zip|
+      zips.each{|file|
         failed = false
         
         begin
@@ -117,9 +117,9 @@ def run_on_directory(dir)
           
           throw "Unable to find new directory" if new_directories.length != 1 && new_files.length == 0
 
-          hw1_test(new_directories.length == 1 ? new_directories.first : '.')
+          test.call(new_directories.length == 1 ? new_directories.first : '.')
         rescue => e
-          failures.puts("#{zip},#{e.inspect}")
+          failures.puts("#{file},#{e.inspect}")
           failed = true
         end
 
@@ -129,9 +129,9 @@ def run_on_directory(dir)
 
         new_files.each{|file|
           run_with_timeout("rm -rf #{file}")
-        }
+        } unless new_files.nil?
 
-        successes.puts(zip) unless failed
+        successes.puts(file) unless failed
       }
     end
 

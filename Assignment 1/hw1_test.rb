@@ -6,7 +6,7 @@ require_relative '../test_framework'
 
 @words = %w[The quick brown fox jumps over the lazy dog]
 
-def hw1_test(directory)
+hw1_test = ->(directory) {
   Dir.chdir(directory) do
     begin
       binary = attempt_compile
@@ -19,7 +19,7 @@ def hw1_test(directory)
     end
     `rm #{binary}`
   end
-end
+}
 
 def find_target_word(prompt)
   @words.each do |word|
