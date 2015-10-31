@@ -10,15 +10,22 @@ def find_makefile
 end
 
 def run_with_timeout(command, timeout = 5)
-  pid = Process.spawn(command)
+  # via http://stackoverflow.com/questions/12189904/fork-child-process-with-timeout-and-capture-output
+
+  pipe = IO.popen(command, 'r')
+
+  output = ''
   begin
     Timeout.timeout(timeout) do
-      Process.wait(pid)
+      Process.waitpid2(pipe.pid)
+      output = pipe.gets(nil)
     end
   rescue Timeout::Error => e
-    Process.kill(-15, pid)
-    raise e
+    Process.kill('-9', pipe.pid)
   end
+
+  pipe.close
+  output
 end
 
 def attempt_compile
@@ -54,7 +61,7 @@ def find_binary_name(makefile)
     return output_match.to_s.split(' ').last unless output_match.nil?
   end
 
-  raise "Unable to find binary name"
+  'a.out'
 end
 
 def get_line_with_delay(r)
@@ -76,6 +83,8 @@ def decompress(file)
     command = "unrar e #{escaped_filename(file)}"
   elsif file.end_with?('.tar.gz')
     command = "tar -xzvf #{escaped_filename(file)}"
+  elsif file.end_with?('.tar')
+    command = "tar -xvf #{escaped_filename(file)}"
   else
     raise "Unrecognized filetype: #{file}"
   end
@@ -94,7 +103,7 @@ def run_on_directory(test, dir)
 
     Dir.chdir(dir) do
       zips = Dir.entries('.').select{|file|
-        !file.match(/.["zip""rar""tar.gz"]\Z/).nil?
+        !file.match(/.["zip""rar""tar.gz""tar"]\Z/).nil?
       }
 
       existing_directories = Dir.glob("**/")

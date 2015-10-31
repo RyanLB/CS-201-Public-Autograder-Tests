@@ -37,7 +37,7 @@ def run(inputs, expected)
   end
 
 
-  output = `#{command}`
+  output = run_with_timeout(command)
   
   throw "Expected #{expected} but found #{output}" unless output.include?(expected)  
 end
