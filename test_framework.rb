@@ -116,8 +116,12 @@ def run_on_directory(test, dir)
           decompress(file)
           
           # Get new directory
-          new_directories = Dir.glob("**/").select{|dir|
-            !existing_directories.include?(dir)
+          new_directories = Dir.glob("**/").select{|d|
+            !existing_directories.include?(d)
+          }
+
+          filtered_directories = new_directories.select{|d|
+            !d.start_with?('__MACOSX')
           }
 
           new_files = Dir.entries('.').select{|file|
@@ -126,7 +130,7 @@ def run_on_directory(test, dir)
           
           throw "Unable to find new directory" if new_directories.length != 1 && new_files.length == 0
 
-          test.call(new_directories.length == 1 ? new_directories.first : '.')
+          test.call(filtered_directories.length == 1 ? filtered_directories.first : '.')
         rescue => e
           failures.puts("#{file},#{e.inspect}")
           failed = true

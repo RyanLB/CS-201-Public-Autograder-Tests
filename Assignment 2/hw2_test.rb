@@ -43,4 +43,4 @@ def run(inputs, expected)
 end
 
 run_on_directory(hw2_test, ARGV.first)
-#hw2_test(ARGV.first)
+#hw2_test.call(ARGV.first)
