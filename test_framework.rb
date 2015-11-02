@@ -50,7 +50,7 @@ def find_binary_name(makefile)
     f.each_line{|line|
       # Remove leading whitespace
       stripped = line.lstrip
-      compilation_statements.push(stripped) if stripped.start_with?('gcc') || stripped.start_with?('$(CC)')
+      compilation_statements.push(stripped) if stripped.start_with?('gcc') || stripped.start_with?('$(CC)') || stripped.start_with?('cc')
     }
   end
 
@@ -103,7 +103,7 @@ def run_on_directory(test, dir)
 
     Dir.chdir(dir) do
       zips = Dir.entries('.').select{|file|
-        !file.match(/.["zip""rar""tar.gz""tar"]\Z/).nil?
+        !file.match(/["zip""rar""tar.gz""tar"]\Z/).nil?
       }
 
       existing_directories = Dir.glob("**/")
