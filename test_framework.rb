@@ -104,6 +104,7 @@ def run_on_directory(test, dir)
     # Open output file for results
     successes = File.open("successes", "w")
     failures = File.open("failures", "w")
+    compiler_output = File.open("compiler_output", "w")
 
     Dir.chdir(dir) do
       zips = Dir.entries('.').select{|file|
@@ -134,10 +135,14 @@ def run_on_directory(test, dir)
           
           throw "Unable to find new directory" if new_directories.length != 1 && new_files.length == 0
 
-          test.call(filtered_directories.length == 1 ? filtered_directories.first : '.', file)
+          test.call(filtered_directories.length == 1 ? filtered_directories.first : '.')
         rescue => e
-          failures.puts("#{file},#{e.inspect}")
-          failed = true
+          if e.to_s.match(/Compiler output found/).nil?
+            failures.puts("#{file},#{e.inspect}")
+            failed = true
+          else
+            compiler_output.puts("#{file}\n\t#{e.inspect}")
+          end
         end
 
         new_directories.each{|dir|
@@ -154,4 +159,5 @@ def run_on_directory(test, dir)
 
     successes.close
     failures.close
+    compiler_output.close
 end

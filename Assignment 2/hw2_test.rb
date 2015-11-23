@@ -5,15 +5,12 @@ require 'timeout'
 require_relative '../test_framework'
 require_relative 'private_tests'
 
-hw2_test = ->(directory, filename) {
+hw2_test = ->(directory) {
   Dir.chdir(directory) do
     nonneg = '([^-]|^)'
 
     begin
       compilation_result = attempt_compile
-      if compilation_result[:output].split("\n").length > 1
-        puts "Compiler output found for #{filename}"
-      end
       @binary = compilation_result[:binary]
 
       # For the public tests, we'll use the examples from the assignment spec
@@ -28,7 +25,11 @@ hw2_test = ->(directory, filename) {
       run(%w(3 3 3f), /#{nonneg}[Nn]a[Nn]/)
       run(%w(3 3 37), /#{nonneg}15\.0/)
 
-      private_tests unless private_tests.nil?
+      private_tests
+
+      if compilation_result[:output].split("\n").length > 1
+        raise "Compiler output found: #{compilation_result[:output]}"
+      end
     rescue => e
       unless e.is_a?(NameError)
         `rm #{@binary}` unless @binary.nil?
