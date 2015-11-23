@@ -21,9 +21,13 @@ hw2_test = ->(directory) {
       run(%w(3 3 18), /1\.0/)
       run(%w(3 3 3f), /[Nn]a[Nn]/)
       run(%w(3 3 37), /15\.0/)
+
+      private_tests.call unless private_tests.nil?
     rescue => e
-      `rm #{@binary}` unless @binary.nil?
-      raise e
+      unless e.is_a?(NameError)
+        `rm #{@binary}` unless @binary.nil?
+        raise e
+      end
     end
     `rm #{@binary}`
   end
