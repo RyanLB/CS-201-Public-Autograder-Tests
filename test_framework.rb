@@ -12,7 +12,7 @@ end
 def run_with_timeout(command, timeout = 5)
   # via http://stackoverflow.com/questions/12189904/fork-child-process-with-timeout-and-capture-output
 
-  pipe = IO.popen(command, 'r')
+  pipe = IO.popen("#{command} 2>&1", 'r')
 
   output = ''
   begin
@@ -23,6 +23,7 @@ def run_with_timeout(command, timeout = 5)
   rescue Timeout::Error => e
     Process.kill('-9', pipe.pid)
   end
+
 
   pipe.close
   output
@@ -41,7 +42,10 @@ def attempt_compile
 
   make_output = run_with_timeout('make')
   raise "Unable to find binary" unless Dir.entries('.').include?(binary)
-  binary
+  {
+    binary: binary,
+    output: make_output
+  }
 end
 
 def find_binary_name(makefile)
@@ -130,7 +134,7 @@ def run_on_directory(test, dir)
           
           throw "Unable to find new directory" if new_directories.length != 1 && new_files.length == 0
 
-          test.call(filtered_directories.length == 1 ? filtered_directories.first : '.')
+          test.call(filtered_directories.length == 1 ? filtered_directories.first : '.', file)
         rescue => e
           failures.puts("#{file},#{e.inspect}")
           failed = true

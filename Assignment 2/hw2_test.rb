@@ -5,24 +5,30 @@ require 'timeout'
 require_relative '../test_framework'
 require_relative 'private_tests'
 
-hw2_test = ->(directory) {
+hw2_test = ->(directory, filename) {
   Dir.chdir(directory) do
+    nonneg = '([^-]|^)'
+
     begin
-      @binary = attempt_compile
+      compilation_result = attempt_compile
+      if compilation_result[:output].split("\n").length > 1
+        puts "Compiler output found for #{filename}"
+      end
+      @binary = compilation_result[:binary]
 
       # For the public tests, we'll use the examples from the assignment spec
-      run(%w(4 4 a8), /12\.0/)
+      run(%w(4 4 a8), /#{nonneg}12\.0/)
       run(%w(4 4 1af), /-15\.5/)
-      run(%w(4 4 af), /15\.5/)
+      run(%w(4 4 af), /#{nonneg}15\.5/)
       run(%w(3 3 3c), /[Nn]a[Nn]/)
-      run(%w(3 3 38), /[^-][Ii]nf/)
-      run(%w(3 3 78), /-[Ii]nf/)
-      run(%w(3 3 26), /3\.5/)
-      run(%w(3 3 18), /1\.0/)
-      run(%w(3 3 3f), /[Nn]a[Nn]/)
-      run(%w(3 3 37), /15\.0/)
+      run(%w(3 3 38), /#{nonneg}[Ii][Nn][Ff]/)
+      run(%w(3 3 78), /-[Ii][Nn][Ff]/)
+      run(%w(3 3 26), /#{nonneg}3\.5/)
+      run(%w(3 3 18), /#{nonneg}1\.0/)
+      run(%w(3 3 3f), /#{nonneg}[Nn]a[Nn]/)
+      run(%w(3 3 37), /#{nonneg}15\.0/)
 
-      private_tests.call unless private_tests.nil?
+      private_tests unless private_tests.nil?
     rescue => e
       unless e.is_a?(NameError)
         `rm #{@binary}` unless @binary.nil?
