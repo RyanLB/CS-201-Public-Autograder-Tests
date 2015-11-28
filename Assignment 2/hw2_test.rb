@@ -61,7 +61,11 @@ def run(inputs, expected, nocmd=false)
   end
   
   #throw "Expected #{expected.to_s} but found #{output}" if output.match(expected).nil?
-  puts "Expected #{expected.to_s} but found #{output}" if output.match(expected).nil?
+  begin
+    puts "Expected #{expected.to_s} but found #{output}" if output.match(expected).nil?
+  rescue NoMethodError => e
+    puts "No output found for input #{input_string} (expecting #{expected})"
+  end
 end
 
 def run_no_cmd(command, input_string, timeout=10)
