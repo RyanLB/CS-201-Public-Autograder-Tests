@@ -2,63 +2,24 @@ require 'pty'
 #require 'pry'
 require 'timeout'
 
+require_relative '../test_framework'
+
 @words = %w[The quick brown fox jumps over the lazy dog]
 
-def hw1_test(directory)
-  @original_directory = Dir.pwd
+hw1_test = ->(directory) {
   Dir.chdir(directory) do
     begin
-      check_for_makefile
-      attempt_compile
-      first_time = play_game(0)
-      second_time = play_game(1)
+      binary = attempt_compile
+      first_time = play_game(binary, 0)
+      second_time = play_game(binary, 1)
       raise "Time value did not increase with delay!" unless second_time.first > first_time.first
     rescue => e
-      `rm #{@binary}` unless @binary.nil?
+      `rm #{binary}` unless binary.nil?
       raise e
     end
-    `rm #{@binary}`
+    `rm #{binary}`
   end
-end
-
-def check_for_makefile
-  makefiles = Dir.entries('.').select{|file|
-    file == 'makefile' || file == 'Makefile'
-  }
-
-  raise "Makefile not found" if makefiles.length != 1
-end
-
-def run_with_timeout(command, timeout = 5)
-  pid = Process.spawn(command)
-  begin
-    Timeout.timeout(timeout) do
-      Process.wait(pid)
-    end
-  rescue Timeout::Error => e
-    Process.kill(-15, pid)
-    raise e
-  end
-end
-
-def attempt_compile
-  existing_files = Dir.entries('.')
-  make_output = run_with_timeout('make')
-  puts "Compilation output: #{make_output}"
-  @binary = (Dir.entries('.') - existing_files).first
-end
-
-def get_line_with_delay(r)
-  # Because Ruby can type much faster than I can, out input
-  # and output can get out of sync if we don't add a small delay
-  sleep(0.03)  
-  r.readpartial(2048)
-end
-
-def put_line_with_delay(w, line)
-  sleep(0.03)
-  w.puts(line)
-end
+}
 
 def find_target_word(prompt)
   @words.each do |word|
@@ -76,10 +37,10 @@ def duplicate_word(found_words, word)
   dup_count > 0
 end
 
-def play_game(delay)
+def play_game(binary, delay)
   delay ||= 0
   
-  PTY.spawn("./#{@binary}"){|r, w, pid|
+  PTY.spawn("./#{binary}"){|r, w, pid|
     begin
       Timeout.timeout(30) do
         # Counter to abort if we get caught in an infinite loop.
@@ -114,60 +75,6 @@ def play_game(delay)
       raise e
     end
   }
-end
-
-def run_on_directory(dir)
-    # Open output file for results
-    successes = File.open("successes", "w")
-    failures = File.open("failures", "w")
-
-    Dir.chdir(dir) do
-      zips = Dir.entries('.').select{|file|
-        file.end_with?(".zip")
-      }.map{|file|
-        file.gsub(" ", "\\ ").gsub('(', '\(').gsub(')', '\)')
-      }
-
-      existing_directories = Dir.glob("**/")
-      existing_files = Dir.entries('.')
-      
-      zips.each{|zip|
-        failed = false
-        
-        begin
-          run_with_timeout("unzip #{zip}", 10)
-          
-          # Get new directory
-          new_directories = Dir.glob("**/").select{|dir|
-            !existing_directories.include?(dir)
-          }
-
-          new_files = Dir.entries('.').select{|file|
-            !existing_files.include?(file)
-          }
-          
-          throw "Unable to find new directory" if new_directories.length != 1 && new_files.length == 0
-
-          hw1_test(new_directories.length == 1 ? new_directories.first : '.')
-        rescue => e
-          failures.puts("#{zip},#{e.inspect}")
-          failed = true
-        end
-
-        new_directories.each{|dir|
-          run_with_timeout("rm -rf #{dir}", 10)
-        } unless new_directories.nil?
-
-        new_files.each{|file|
-          run_with_timeout("rm -rf #{file}")
-        }
-
-        successes.puts(zip) unless failed
-      }
-    end
-
-    successes.close
-    failures.close
 end
 
 #run_on_directory(ARGV.first)
