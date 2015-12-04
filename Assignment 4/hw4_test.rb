@@ -1,4 +1,3 @@
-require 'pry'
 require 'timeout'
 
 require_relative '../test_framework'
@@ -65,6 +64,7 @@ def hw4_run_on_directory(directory, distro_code_dir)
         end
       end
       
+      successes.puts(submission) unless failed
       `rm -r sandbox`
     end
   end
